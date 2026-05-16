@@ -6,11 +6,11 @@
     <title>S&P 500 Signal Desk</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="hero">
+    <header class="hero" id="top">
       <nav class="topbar" aria-label="Primary navigation">
         <a class="brand" href="#top" aria-label="S&P 500 Signal Desk home">
           <span class="brand-mark">S</span>
@@ -18,74 +18,94 @@
         </a>
         <div class="nav-links">
           <a href="#dashboard">Dashboard</a>
+          <a href="#methodology">Scoring</a>
           <a href="#news">Daily News</a>
           <a href="#industries">Industries</a>
-          <a href="#picks">Stock Picks</a>
+          <a href="#picks">Picks</a>
         </div>
       </nav>
 
-      <section class="hero-grid" id="top">
+      <section class="hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">Market intelligence · Updated daily</p>
-          <h1>Sort, compare, and understand S&P 500 opportunities in minutes.</h1>
+          <p class="eyebrow">Self-updating market dashboard</p>
+          <h1>Rank S&P 500 stocks with live prices, news, and transparent scoring.</h1>
           <p class="hero-text">
-            A clean research dashboard for ranking companies by price action, valuation, momentum,
-            analyst sentiment, volatility, and daily news impact across every major sector.
+            This prototype now connects to public market-data and news endpoints, explains every rating,
+            and falls back to labeled cached data only when a network or API limit blocks live updates.
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="#dashboard">Explore rankings</a>
-            <a class="button secondary" href="#news">Read top news</a>
+            <a class="button primary" href="#dashboard">Open dashboard</a>
+            <a class="button secondary" href="#methodology">See formula</a>
           </div>
         </div>
 
-        <aside class="market-card" aria-label="Daily market pulse">
+        <aside class="market-card" aria-label="Data status and market pulse">
           <div class="card-header">
-            <span>Today&apos;s Market Pulse</span>
-            <strong>May 16</strong>
+            <span>Data Status</span>
+            <strong id="statusMode">Loading...</strong>
           </div>
           <div class="pulse-score">
-            <span>78</span>
-            <p>Constructive trend with selective leadership in AI infrastructure and healthcare innovation.</p>
+            <span id="marketScore">--</span>
+            <p id="marketSummary">Connecting to live sources and calculating breadth, momentum, volatility, and news sentiment.</p>
           </div>
           <div class="mini-metrics">
-            <div><strong>+1.4%</strong><span>Avg. momentum</span></div>
-            <div><strong>63%</strong><span>Stocks above 50D</span></div>
-            <div><strong>22</strong><span>High-conviction names</span></div>
+            <div><strong id="averageMomentum">--</strong><span>Avg. momentum score</span></div>
+            <div><strong id="positiveBreadth">--</strong><span>Stocks up today</span></div>
+            <div><strong id="lastUpdated">--</strong><span>Last updated</span></div>
           </div>
         </aside>
       </section>
     </header>
 
     <main>
+      <section class="section source-panel" aria-label="Live data configuration">
+        <div>
+          <p class="eyebrow">Data sources</p>
+          <h2>Live when possible, honest when not.</h2>
+          <p>
+            The app attempts to load the current S&P 500 constituent list, recent price history, and current market news.
+            Add a Financial Modeling Prep API key if you want fundamentals like P/E, beta, and market cap included in the scoring.
+          </p>
+        </div>
+        <form class="api-form" id="apiForm">
+          <label>
+            <span>Optional FMP API key</span>
+            <input id="apiKey" type="password" placeholder="Paste key for fundamentals" autocomplete="off" />
+          </label>
+          <button class="button primary dark" type="submit">Reload live data</button>
+          <button class="button ghost" id="clearKey" type="button">Clear key</button>
+        </form>
+        <ul class="source-list" id="sourceList"></ul>
+      </section>
+
       <section class="section dashboard" id="dashboard">
         <div class="section-heading">
           <p class="eyebrow">Sortable analysis</p>
-          <h2>All-in-one S&P 500 ranking table</h2>
+          <h2>Live ranking table</h2>
           <p>
-            Use the search, sector filter, and metric sorting to quickly surface stocks with attractive
-            combinations of momentum, fundamentals, risk, and news strength.
+            Scores are computed from the latest available data. Click a row to see the exact metrics used for that ticker.
           </p>
         </div>
 
         <div class="toolbar" aria-label="Stock table controls">
           <label class="search-box">
-            <span>Search ticker or company</span>
+            <span>Search ticker, company, or industry</span>
             <input id="stockSearch" type="search" placeholder="Try NVDA, energy, medicine..." />
           </label>
           <label>
             <span>Sector</span>
-            <select id="sectorFilter">
-              <option value="all">All sectors</option>
-            </select>
+            <select id="sectorFilter"><option value="all">All sectors</option></select>
           </label>
           <label>
             <span>Sort by</span>
             <select id="sortMetric">
-              <option value="score">Composite score</option>
+              <option value="composite">Composite score</option>
               <option value="momentum">Momentum</option>
+              <option value="valuation">Valuation</option>
               <option value="news">News impact</option>
-              <option value="value">Value</option>
-              <option value="risk">Lowest risk</option>
+              <option value="risk">Risk quality</option>
+              <option value="dayChange">Today %</option>
+              <option value="monthReturn">1M %</option>
             </select>
           </label>
         </div>
@@ -96,32 +116,61 @@
               <tr>
                 <th>Ticker</th>
                 <th>Company</th>
-                <th>Industry</th>
-                <th>Momentum</th>
-                <th>Value</th>
-                <th>News</th>
-                <th>Risk</th>
-                <th>Score</th>
+                <th>Sector</th>
+                <th>Price</th>
+                <th>Today</th>
+                <th>1M</th>
+                <th>P/E</th>
+                <th>Composite</th>
               </tr>
             </thead>
-            <tbody id="stockTable"></tbody>
+            <tbody id="stockTable">
+              <tr><td colspan="8">Loading market data...</td></tr>
+            </tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="section methodology" id="methodology">
+        <div class="section-heading compact">
+          <p class="eyebrow">No black box</p>
+          <h2>Composite rating methodology</h2>
+          <p>Every stock is scored from 0-100 using normalized market inputs. Missing live fields are excluded rather than invented.</p>
+        </div>
+        <div class="formula-grid">
+          <article>
+            <span class="formula-weight">35%</span>
+            <h3>Momentum</h3>
+            <p>Blend of today&apos;s percentage move, one-month return, and current price versus the 20-day average.</p>
+          </article>
+          <article>
+            <span class="formula-weight">25%</span>
+            <h3>Valuation</h3>
+            <p>Uses P/E versus sector peers when an FMP key is supplied. If unavailable, this weight is redistributed across known metrics.</p>
+          </article>
+          <article>
+            <span class="formula-weight">20%</span>
+            <h3>News impact</h3>
+            <p>Uses today&apos;s GDELT article volume and keyword tone for each company and sector.</p>
+          </article>
+          <article>
+            <span class="formula-weight">20%</span>
+            <h3>Risk quality</h3>
+            <p>Rewards lower realized volatility, lower beta when available, and steadier recent price movement.</p>
+          </article>
         </div>
       </section>
 
       <section class="section news" id="news">
         <div class="section-heading compact">
           <p class="eyebrow">Daily news page</p>
-          <h2>Top points and news of the day</h2>
+          <h2>Top points and market news of the day</h2>
         </div>
         <div class="news-grid">
-          <article class="lead-story">
-            <span class="tag">Market theme</span>
-            <h3>Leadership remains concentrated in earnings quality, AI spending, and defensive growth.</h3>
-            <p>
-              The dashboard prioritizes companies with accelerating revenue, strong balance sheets, and
-              positive news flow while flagging stretched valuation or volatility risk.
-            </p>
+          <article class="lead-story" id="leadStory">
+            <span class="tag">Loading</span>
+            <h3>Pulling current headlines...</h3>
+            <p>News updates from GDELT and falls back to labeled cached headlines if the endpoint is unavailable.</p>
           </article>
           <div class="story-list" id="dailyNews"></div>
         </div>
@@ -137,19 +186,25 @@
 
       <section class="section picks" id="picks">
         <div class="section-heading compact">
-          <p class="eyebrow">Featured stock research</p>
-          <h2>Stock of the day, week, month, and forward-looking idea</h2>
+          <p class="eyebrow">Calculated picks</p>
+          <h2>Stock of the day, week, month, and upside watch</h2>
+          <p>These are calculated from the same transparent scoring model, not hard-coded favorites.</p>
         </div>
         <div class="pick-grid" id="pickGrid"></div>
         <p class="disclaimer">
-          Educational mockup only. Replace sample values with licensed real-time market data and do your own
-          research before making investment decisions.
+          Educational research prototype only. This is not financial advice or a trading recommendation.
+          Verify data with licensed feeds and a qualified advisor before investing.
         </p>
       </section>
     </main>
 
+    <dialog id="stockDialog" aria-labelledby="dialogTitle">
+      <button class="dialog-close" id="closeDialog" aria-label="Close stock details">×</button>
+      <div id="dialogContent"></div>
+    </dialog>
+
     <footer>
-      <p>Designed for fast S&P 500 research · Data-ready UI · Not financial advice</p>
+      <p>Built as a data-ready S&P 500 research dashboard · Live endpoints + transparent fallback mode · Not financial advice</p>
     </footer>
 
     <script src="script.js"></script>
